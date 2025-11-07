@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rang AI 🕳️ - AI Video Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Enhanced Splash Screen */
+        .splash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            animation: fadeOut 0.8s ease 3.5s forwards;
+            overflow: hidden;
+        }
+
+        .splash::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveGrid 20s linear infinite;
+        }
+
+        @keyframes moveGrid {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+            }
+        }
+
+        .splash-logo {
+            font-size: 7em;
+            animation: logoFloat 2s ease-in-out infinite, logoRotate 4s ease-in-out infinite, logoPulse 1.5s ease-in-out infinite;
+            text-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+        }
+
+        @keyframes logoRotate {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-5deg); }
+            75% { transform: rotate(5deg); }
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .splash-title {
+            color: white;
+            font-size: 4em;
+            font-weight: 700;
+            margin-top: 30px;
+            text-shadow: 0 8px 30px rgba(0,0,0,0.4);
+            animation: titleSlide 1s ease 0.5s backwards, titleGlow 2s ease-in-out infinite;
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes titleSlide {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { text-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+            50% { text-shadow: 0 8px 30px rgba(255,255,255,0.6), 0 0 40px rgba(255,255,255,0.4); }
+        }
+
+        .splash-subtitle {
+            color: rgba(255,255,255,0.95);
+            font-size: 1.5em;
+            margin-top: 20px;
+            animation: subtitleSlide 1s ease 0.8s backwards;
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes subtitleSlide {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .splash-loader {
+            margin-top: 50px;
+            width: 70px;
+            height: 70px;
+            border: 6px solid rgba(255,255,255,0.3);
+            border-top: 6px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite, loaderPulse 1s ease-in-out 1.2s backwards;
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes loaderPulse {
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .splash-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: particleFloat 3s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; }
+        .particle:nth-child(2) { left: 20%; top: 80%; animation-delay: 0.5s; }
+        .particle:nth-child(3) { left: 60%; top: 30%; animation-delay: 1s; }
+        .particle:nth-child(4) { left: 80%; top: 70%; animation-delay: 1.5s; }
+        .particle:nth-child(5) { left: 90%; top: 40%; animation-delay: 2s; }
+
+        @keyframes particleFloat {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
+            50% { transform: translateY(-30px) scale(1.2); opacity: 1; }
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(102,126,234,0.95);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 1.5em;
+            font-weight: 600;
+        }
+
+        .loader {
+            --size: 80px;
+            position: relative;
+            height: var(--size);
+            width: var(--size);
+            filter: url('#ooze');
+        }
+
+        .loader::before,
+        .loader::after,
+        .loader .dot {
+            content: '';
+            position: absolute;
+            width: 33%;
+            height: 33%;
+            background: white;
+            border-radius: 100%;
+        }
+
+        .loader .dot {
+            top: 6%;
+            left: 30%;
+            animation: grow 1.75s ease infinite;
+        }
+
+        .loader::before {
+            bottom: 6%;
+            right: 0;
+            animation: grow 1.75s ease -1.166s infinite;
+        }
+
+        .loader::after {
+            bottom: 6%;
+            left: 0;
+            animation: grow 1.75s ease -0.583s infinite;
+        }
+
+        .loader .traveler {
+            position: absolute;
+            top: 6%;
+            left: 30%;
+            width: 33%;
+            height: 33%;
+            background: white;
+            border-radius: 100%;
+            animation: triangulate 1.75s ease infinite;
+        }
+
+        @keyframes triangulate {
+            0%, 100% { transform: none; }
+            33.333% { transform: translate(120%, 175%); }
+            66.666% { transform: translate(-95%, 175%); }
+        }
+
+        @keyframes grow {
+            0%, 85%, 100% { transform: scale(1.5); }
+            50%, 60% { transform: scale(0); }
+        }
+
+        /* Home Button */
+        .home-btn-fixed {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            width: 55px;
+            height: 55px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6em;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+
+        .home-btn-fixed:hover {
+            transform: scale(1.15) rotate(10deg);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.4);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 80px 15px 15px;
+        }
+
+        /* Pages */
+        .page {
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Home Page */
+        .home-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            padding: 20px;
+        }
+
+        .home-page h1 {
+            font-size: clamp(2.5em, 8vw, 5.5em);
+            margin-bottom: 20px;
+            text-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        }
+
+        .home-page > p {
+            font-size: clamp(1em, 3vw, 1.6em);
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        .home-btns {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+            margin-bottom: 60px;
+        }
+
+        .home-card {
+            background: rgba(255,255,255,0.15);
+            padding: 40px 30px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.4s;
+            border: 2px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .home-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            background: rgba(255,255,255,0.25);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+        }
+
+        .home-card h2 {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .home-card h3 {
+            font-size: 1.4em;
+            margin-bottom: 10px;
+        }
+
+        .home-card p {
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .feature {
+            background: rgba(255,255,255,0.15);
+            padding: 35px 25px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.4s;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .feature:hover {
+            transform: translateY(-10px);
+            background: rgba(255,255,255,0.25);
+        }
+
+        .feature h3 {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .feature h4 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 40px 25px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .header h1 {
+            font-size: clamp(2em, 6vw, 3.5em);
+            margin-bottom: 15px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin: 5px;
+        }
+
+        /* Main */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+        }
+
+        @media (min-width: 1024px) {
+            .main {
+                grid-template-columns: 1fr 1.3fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+        }
+
+        .card h2 {
+            color: #1e3c72;
+            margin-bottom: 25px;
+            font-size: 1.9em;
+        }
+
+        .input-group {
+            margin-bottom: 22px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #1f2937;
+            font-weight: 600;
+        }
+
+        textarea, input[type="file"] {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102,126,234,0.15);
+        }
+
+        .grid-btns {
+            display: grid;
+            gap: 12px;
+        }
+
+        .mode-btns, .duration-btns {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .quality-btns, .style-btns {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .btn {
+            padding: 14px 12px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .gen-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .gen-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        video {
+            width: 100%;
+            max-height: 70vh;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        }
+
+        .output {
+            display: none;
+        }
+
+        .output.active {
+            display: block;
+        }
+
+        .download-section {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 14px 30px;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .new-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .img-preview {
+            max-width: 100%;
+            max-height: 280px;
+            margin: 15px 0;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .img-preview.active {
+            display: block;
+        }
+
+        .error, .success {
+            padding: 14px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #dc2626;
+        }
+
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        .error.active, .success.active {
+            display: block;
+        }
+
+        .video-info {
+            background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .video-info p {
+            color: #374151;
+            font-size: 13px;
+            margin: 5px 0;
+        }
+
+        /* History & Gallery */
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .history-item {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        .history-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 45px rgba(0,0,0,0.35);
+        }
+
+        .history-item video {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .history-info {
+            padding: 15px;
+        }
+
+        .history-info h3 {
+            color: #1e3c72;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+
+        .history-info p {
+            color: #6b7280;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .delete-btn {
+            flex: 1;
+            padding: 10px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .delete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(239,68,68,0.4);
+        }
+
+        /* FAQ */
+        .faq-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            background: white;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .faq-question {
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #1e3c72;
+            transition: all 0.3s;
+        }
+
+        .faq-question:hover {
+            background: #eef2ff;
+        }
+
+        .faq-icon {
+            font-size: 1.5em;
+            transition: transform 0.3s;
+        }
+
+        .faq-item.active .faq-icon {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            padding: 0 20px;
+            color: #6b7280;
+            line-height: 1.8;
+        }
+
+        .faq-item.active .faq-answer {
+            max-height: 500px;
+            padding: 0 20px 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: white;
+        }
+
+        .empty-state h3 {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .duration-btns {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .container {
+                padding: 60px 15px 15px;
+            }
+
+            .home-btns {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Enhanced Splash -->
+    <div class="splash" id="splash">
+        <div class="splash-particles">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+        </div>
+        <div class="splash-logo">🕳️</div>
+        <div class="splash-title">Rang AI</div>
+        <div class="splash-subtitle">Professional AI Video Generator</div>
+        <div class="splash-loader"></div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-overlay" id="loading">
+        <div class="loader">
+            <div class="dot"></div>
+            <div class="traveler"></div>
+        </div>
+        <div class="loading-text" id="loadingText">Processing...</div>
+    </div>
+
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <filter id="ooze">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="3.333" result="blur" />
+                <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="ooze" />
+                <feBlend in="SourceGraphic" in2="ooze" />
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- Home Button -->
+    <button class="home-btn-fixed" id="homeBtn" onclick="goTo('home')" style="display: none;">🏠</button>
+
+    <div class="container">
+        <!-- Home Page -->
+        <div class="page active" id="home">
+            <div class="home-page">
+                <h1>🕳️ Rang AI</h1>
+                <p>Create Stunning AI Videos</p>
+
+                <div class="home-btns">
+                    <div class="home-card" onclick="goTo('create')">
+                        <h2>🎬</h2>
+                        <h3>Create Video</h3>
+                        <p>Generate AI videos</p>
+                    </div>
+                    <div class="home-card" onclick="goTo('gallery')">
+                        <h2>🖼️</h2>
+                        <h3>Gallery</h3>
+                        <p>Saved videos</p>
+                    </div>
+                    <div class="home-card" onclick="goTo('history')">
+                        <h2>📜</h2>
+                        <h3>History</h3>
+                        <p>Recent videos</p>
+                    </div>
+                    <div class="home-card" onclick="goTo('faq')">
+                        <h2>❓</h2>
+                        <h3>FAQ</h3>
+                        <p>Help & Support</p>
+                    </div>
+                </div>
+
+                <div class="features">
+                    <div class="feature">
+                        <h3>📝</h3>
+                        <h4>Text to Video</h4>
+                        <p>AI generation</p>
+                    </div>
+                    <div class="feature">
+                        <h3>🖼️</h3>
+                        <h4>Image Animation</h4>
+                        <p>Bring to life</p>
+                    </div>
+                    <div class="feature">
+                        <h3>⏱️</h3>
+                        <h4>Accurate Timing</h4>
+                        <p>5-60 seconds</p>
+                    </div>
+                    <div class="feature">
+                        <h3>⚡</h3>
+                        <h4>Fast</h4>
+                        <p>Quick generation</p>
+                    </div>
+                    <div class="feature">
+                        <h3>🎞️</h3>
+                        <h4>HD Quality</h4>
+                        <p>Up to 1440p</p>
+                    </div>
+                    <div class="feature">
+                        <h3>🆓</h3>
+                        <h4>Free</h4>
+                        <p>Unlimited</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Page -->
+        <div class="page" id="create">
+            <div class="header">
+                <h1>Create Video</h1>
+                <p>AI Video Generator</p>
+                <div>
+                    <span class="badge">✨ Professional</span>
+                    <span class="badge">⏱️ Accurate</span>
+                </div>
+            </div>
+
+            <div class="main">
+                <div class="card">
+                    <h2>🎬 Settings</h2>
+                    
+                    <div class="input-group">
+                        <label>Mode</label>
+                        <div class="grid-btns mode-btns">
+                            <button class="btn active" data-mode="text">📝 Text</button>
+                            <button class="btn" data-mode="image">🖼️ Image</button>
+                            <button class="btn" data-mode="enhance">✨ Enhance</button>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Description</label>
+                        <textarea id="prompt" placeholder="Describe your video..."></textarea>
+                    </div>
+
+                    <div class="input-group" id="imageGroup" style="display: none;">
+                        <label>Upload Image</label>
+                        <input type="file" id="imageInput" accept="image/*">
+                        <img id="imagePreview" class="img-preview">
+                    </div>
+
+                    <div class="input-group">
+                        <label>Duration</label>
+                        <div class="grid-btns duration-btns">
+                            <button class="btn" data-duration="5">5s</button>
+                            <button class="btn active" data-duration="10">10s</button>
+                            <button class="btn" data-duration="15">15s</button>
+                            <button class="btn" data-duration="20">20s</button>
+                            <button class="btn" data-duration="30">30s</button>
+                            <button class="btn" data-duration="60">60s</button>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Quality</label>
+                        <div class="grid-btns quality-btns">
+                            <button class="btn" data-quality="720">720p</button>
+                            <button class="btn active" data-quality="1080">1080p</button>
+                            <button class="btn" data-quality="1440">1440p</button>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Style</label>
+                        <div class="grid-btns style-btns">
+                            <button class="btn active" data-style="cinematic">🎬 Cinematic</button>
+                            <button class="btn" data-style="zoom">🔍 Zoom</button>
+                            <button class="btn" data-style="pan">↔️ Pan</button>
+                            <button class="btn" data-style="rotate">🔄 Rotate</button>
+                            <button class="btn" data-style="drift">🌊 Drift</button>
+                            <button class="btn" data-style="pulse">💫 Pulse</button>
+                        </div>
+                    </div>
+
+                    <button class="gen-btn" id="genBtn">🎬 Generate Video</button>
+                    
+                    <div class="error" id="error"></div>
+                    <div class="success" id="success"></div>
+                </div>
+
+                <div class="card">
+                    <h2>🎥 Your Video</h2>
+                    
+                    <div class="output" id="output">
+                        <video id="video" controls loop></video>
+                        <div class="video-info">
+                            <p id="videoInfo"></p>
+                        </div>
+                        <div class="download-section">
+                            <a href="#" class="action-btn download-btn" id="downloadBtn" download="rang-ai.webm">📥 Download</a>
+                            <button class="action-btn save-btn" id="saveBtn">💾 Save</button>
+                            <button class="action-btn new-btn" id="newBtn">✨ New</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gallery Page -->
+        <div class="page" id="gallery">
+            <div class="header">
+                <h1>🖼️ Gallery</h1>
+                <p>Your Saved Videos</p>
+            </div>
+            <div class="card">
+                <div class="history-grid" id="galleryGrid">
+                    <div class="empty-state">
+                        <h3>📽️</h3>
+                        <p>No videos saved</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Page -->
+        <div class="page" id="history">
+            <div class="header">
+                <h1>📜 History</h1>
+                <p>Recent Videos</p>
+            </div>
+            <div class="card">
+                <div class="history-grid" id="historyGrid">
+                    <div class="empty-state">
+                        <h3>📽️</h3>
+                        <p>No videos yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ Page -->
+        <div class="page" id="faq">
+            <div class="header">
+                <h1>❓ FAQ</h1>
+                <p>Frequently Asked Questions</p>
+            </div>
+            <div class="faq-container">
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I create a video?</span>
+                        <span class="faq-icon">▼</span>
+                    </div>
+                    <div class="faq-answer">
+                        Go to "Create Video" page, enter your description, select duration and quality, then click "Generate Video". Your AI video will be created in seconds!
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>What video durations are available?</span>
+                        <span class="faq-icon">▼</span>
+                    </div>
+                    <div class="faq-answer">
+                        You can create videos from 5 to 60 seconds with options for 5s, 10s, 15s, 20s, 30s, and 60s durations.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>What quality options are available?</span>
+                        <span class="faq-icon">▼</span>
+                    </div>
+                    <div class="faq-answer">
+                        Rang AI supports three quality levels: 720p (HD), 1080p (Full HD), and 1440p (2K). Higher quality means larger file sizes.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Can I use my own images?</span>
+                        <span class="faq-icon">▼</span>
+                    </div>
+                    <div class="faq-answer">
+                        Yes! Select "Image" mode and upload your own image. The app will animate it with your chosen style.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>What are animation styles?</span>
+                        <span class="faq-icon">▼</span>
+                    </div>
+                    <div class="faq-answer">
+                        We offer 6 animation styles: Cinematic (smooth camera movement), Zoom (zoom in effect), Pan (horizontal movement), Rotate (360° rotation), Drift (floating effect), and Pulse (breathing effect).
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>How do I save videos?</span>
+                        <span class="faq-icon">▼</span>
+                    </div>
+                    <div class="faq-answer">
+                        After generating a video, click the "Save" button to add it to your gallery. You can also download it directly to your device.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Is Rang AI free?</span>
+                        <span class="faq-icon">▼</span>
+                    </div>
+                    <div class="faq-answer">
+                        Yes! Rang AI is completely free to use with unlimited video generation. No subscription or payment required.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Where are my videos stored?</span>
+                        <span class="faq-icon">▼</span>
+                    </div>
+                    <div class="faq-answer">
+                        Videos are stored locally in your browser. They're automatically saved to history when generated and can be manually saved to gallery.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        setTimeout(() => document.getElementById('splash').style.display = 'none', 3800);
+
+        let gallery = JSON.parse(localStorage.getItem('rangai_gallery')) || [];
+        let history = JSON.parse(localStorage.getItem('rangai_history')) || [];
+
+        const state = {
+            mode: 'text',
+            duration: 10,
+            quality: '1080',
+            style: 'cinematic',
+            img: null,
+            currentVideo: null
+        };
+
+        function show(text = 'Loading...') {
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        function hide() {
+            document.getElementById('loading').classList.remove('active');
+        }
+
+        function update(text) {
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        function goTo(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(page).classList.add('active');
+            document.getElementById('homeBtn').style.display = page === 'home' ? 'none' : 'flex';
+
+            if (page === 'history') loadHistory();
+            if (page === 'gallery') loadGallery();
+        }
+
+        function toggleFaq(element) {
+            const faqItem = element.parentElement;
+            faqItem.classList.toggle('active');
+        }
+
+        document.querySelectorAll('[data-mode]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.mode = btn.dataset.mode;
+                document.getElementById('imageGroup').style.display = state.mode === 'text' ? 'none' : 'block';
+            });
+        });
+
+        document.querySelectorAll('[data-duration]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-duration]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.duration = parseInt(btn.dataset.duration);
+            });
+        });
+
+        document.querySelectorAll('[data-quality]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-quality]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.quality = btn.dataset.quality;
+            });
+        });
+
+        document.querySelectorAll('[data-style]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-style]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.style = btn.dataset.style;
+            });
+        });
+
+        document.getElementById('imageInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                show('Uploading...');
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    state.img = e.target.result;
+                    document.getElementById('imagePreview').src = e.target.result;
+                    document.getElementById('imagePreview').classList.add('active');
+                    hide();
+                    showSuccess('Image uploaded!');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('genBtn').addEventListener('click', async () => {
+            const prompt = document.getElementById('prompt').value.trim();
+            if (!prompt) return showError('Enter description!');
+            if (state.mode !== 'text' && !state.img) return showError('Upload image!');
+            await gen(prompt);
+        });
+
+        document.getElementById('newBtn').addEventListener('click', () => {
+            document.getElementById('output').classList.remove('active');
+            document.getElementById('prompt').value = '';
+            document.getElementById('imagePreview').classList.remove('active');
+        });
+
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            if (state.currentVideo) {
+                gallery.unshift(state.currentVideo);
+                localStorage.setItem('rangai_gallery', JSON.stringify(gallery));
+                showSuccess('Video saved to gallery!');
+            }
+        });
+
+        async function gen(prompt) {
+            const out = document.getElementById('output');
+            const btn = document.getElementById('genBtn');
+            
+            show('Initializing...');
+            out.classList.remove('active');
+            btn.disabled = true;
+            
+            try {
+                update('Generating image...');
+                
+                let img;
+                if (state.mode === 'text') {
+                    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ', 4k')}?width=1920&height=1080&nologo=true&seed=${Date.now()}`;
+                    const res = await fetch(url);
+                    const blob = await res.blob();
+                    img = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                } else {
+                    img = state.img;
+                }
+                
+                update(`Creating ${state.duration}s video...`);
+                const vid = await createVid(img, state.duration, state.quality, state.style);
+                
+                const url = URL.createObjectURL(vid);
+                const player = document.getElementById('video');
+                player.src = url;
+                document.getElementById('downloadBtn').href = url;
+                
+                player.onloadedmetadata = () => {
+                    const res = { '720': '1280×720', '1080': '1920×1080', '1440': '2560×1440' };
+                    document.getElementById('videoInfo').innerHTML = `
+                        📺 ${res[state.quality]} | ⏱️ ${player.duration.toFixed(1)}s | 🎨 ${state.style}
+                    `;
+                };
+
+                state.currentVideo = {
+                    prompt,
+                    url,
+                    duration: state.duration,
+                    quality: state.quality,
+                    style: state.style,
+                    date: new Date().toISOString()
+                };
+
+                history.unshift(state.currentVideo);
+                if (history.length > 50) history = history.slice(0, 50);
+                localStorage.setItem('rangai_history', JSON.stringify(history));
+                
+                hide();
+                out.classList.add('active');
+                showSuccess('Video created!');
+                
+            } catch (error) {
+                console.error(error);
+                hide();
+                showError('Failed: ' + error.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function createVid(img, dur, qual, style) {
+            return new Promise((resolve, reject) => {
+                const image = new Image();
+                image.crossOrigin = "anonymous";
+                
+                image.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d', { alpha: false });
+                    
+                    const res = { '720': { w: 1280, h: 720 }, '1080': { w: 1920, h: 1080 }, '1440': { w: 2560, h: 1440 } };
+                    const r = res[qual];
+                    canvas.width = r.w;
+                    canvas.height = r.h;
+                    
+                    const stream = canvas.captureStream(30);
+                    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9', videoBitsPerSecond: 5000000 });
+                    
+                    const chunks = [];
+                    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+                    recorder.onstop = () => resolve(new Blob(chunks, { type: 'video/webm' }));
+                    
+                    const fps = 30;
+                    const total = dur * fps;
+                    let frame = 0;
+                    
+                    const anims = {
+                        cinematic: p => ({ s: 1 + p * 0.2, x: Math.sin(p * Math.PI * 2) * 30, y: Math.cos(p * Math.PI) * 20, r: 0 }),
+                        zoom: p => ({ s: 1 + p * 0.5, x: 0, y: 0, r: 0 }),
+                        pan: p => ({ s: 1.2, x: (p - 0.5) * 200, y: 0, r: 0 }),
+                        rotate: p => ({ s: 1.1, x: 0, y: 0, r: p * Math.PI * 2 }),
+                        drift: p => ({ s: 1 + Math.sin(p * Math.PI) * 0.1, x: Math.sin(p * Math.PI * 3) * 50, y: Math.cos(p * Math.PI * 2) * 40, r: 0 }),
+                        pulse: p => ({ s: 1 + Math.sin(p * Math.PI * 4) * 0.1, x: 0, y: 0, r: 0 })
+                    };
+                    
+                    const anim = anims[style] || anims.cinematic;
+                    
+                    const render = () => {
+                        if (frame >= total) {
+                            setTimeout(() => recorder.stop(), 500);
+                            return;
+                        }
+                        
+                        const p = frame / total;
+                        const t = anim(p);
+                        
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        
+                        ctx.save();
+                        ctx.translate(canvas.width / 2, canvas.height / 2);
+                        ctx.scale(t.s, t.s);
+                        if (t.r) ctx.rotate(t.r);
+                        ctx.translate(-canvas.width / 2 + t.x, -canvas.height / 2 + t.y);
+                        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                        ctx.restore();
+                        
+                        frame++;
+                        
+                        if (frame % 30 === 0) {
+                            update(`Rendering: ${Math.round(p * 100)}%`);
+                        }
+                        
+                        requestAnimationFrame(render);
+                    };
+                    
+                    recorder.start(1000);
+                    setTimeout(() => render(), 100);
+                };
+                
+                image.onerror = () => reject(new Error('Image load failed'));
+                image.src = img;
+            });
+        }
+
+        function loadHistory() {
+            const grid = document.getElementById('historyGrid');
+            if (history.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><h3>📽️</h3><p>No videos yet</p></div>';
+            } else {
+                grid.innerHTML = history.map((v, i) => `
+                    <div class="history-item">
+                        <video src="${v.url}" controls></video>
+                        <div class="history-info">
+                            <h3>${v.prompt.substring(0, 50)}...</h3>
+                            <p>${new Date(v.date).toLocaleDateString()}</p>
+                            <div class="history-actions">
+                                <button class="delete-btn" onclick="deleteHistory(${i})">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function loadGallery() {
+            const grid = document.getElementById('galleryGrid');
+            if (gallery.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><h3>📽️</h3><p>No videos saved</p></div>';
+            } else {
+                grid.innerHTML = gallery.map((v, i) => `
+                    <div class="history-item">
+                        <video src="${v.url}" controls></video>
+                        <div class="history-info">
+                            <h3>${v.prompt.substring(0, 50)}...</h3>
+                            <p>${new Date(v.date).toLocaleDateString()}</p>
+                            <div class="history-actions">
+                                <button class="delete-btn" onclick="deleteGallery(${i})">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function deleteHistory(index) {
+            if (confirm('Delete this video from history?')) {
+                history.splice(index, 1);
+                localStorage.setItem('rangai_history', JSON.stringify(history));
+                loadHistory();
+                showSuccess('Video deleted from history!');
+            }
+        }
+
+        function deleteGallery(index) {
+            if (confirm('Delete this video from gallery?')) {
+                gallery.splice(index, 1);
+                localStorage.setItem('rangai_gallery', JSON.stringify(gallery));
+                loadGallery();
+                showSuccess('Video deleted from gallery!');
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('error').textContent = '❌ ' + msg;
+            document.getElementById('error').classList.add('active');
+            document.getElementById('success').classList.remove('active');
+        }
+
+        function showSuccess(msg) {
+            document.getElementById('success').textContent = '✅ ' + msg;
+            document.getElementById('success').classList.add('active');
+            document.getElementById('error').classList.remove('active');
+        }
+
+        console.log('%c🕳️ Rang AI Ready!', 'color: #667eea; font-size: 20px; font-weight: bold;');
+    </script>
+</body>
+</html>
